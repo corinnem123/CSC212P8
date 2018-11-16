@@ -29,6 +29,51 @@ public class CheckSpelling {
 		return words;
 	}
 	
+	//read the book to spell check
+	public static List<String> readText() {
+		List<String> book;
+		try {
+			book = Files.readAllLines(new File("src/main/resources/wutheringHeights.txt").toPath());
+		} catch (IOException e) {
+			throw new RuntimeException("Couldn't find dictionary.", e);
+		}
+		return book;
+	}
+	
+	/*
+	 * Construct a dataset that has Strings that are both in and not in the dictionary.
+	 * run through the dictionary, adding "xyz" to the end of some words 
+	 * so they're not in the dictionary
+	 * 
+	 * @param dict - the passed dictionary from structure
+	 * @param numSamples - size of the list to return
+	 * @param fractionYes - number of words in return list that are also in original list
+	 */
+	public static List<String> fakeDictionary(List<String> dict, int numSamples, double fractionYes) {
+		List<String> og = loadDictionary();
+		
+		int numYes = (int)(fractionYes*numSamples);
+		int size = 0;
+		
+		//build mixedData list of some copies from original some that aren't
+		List<String> mixedData = new ArrayList<>();
+		
+			for (String o : og) {
+				//if the string is smaller than correct words needed, add correct words
+				if (size < numYes) {
+					mixedData.add(o);
+				}
+				if (size >= numYes && size < numSamples) {
+						mixedData.add(o+"xyz");
+					}
+				size ++;
+			}
+			
+		return mixedData;
+			
+		}
+	
+	
 	/**
 	 * This method looks for all the words in a dictionary.
 	 * @param words - the "queries"
@@ -41,6 +86,8 @@ public class CheckSpelling {
 		for (String w : words) {
 			if (dictionary.contains(w)) {
 				found++;
+			} else {
+				System.out.println(w);
 			}
 		}
 		
@@ -69,6 +116,46 @@ public class CheckSpelling {
 			hm100k.add(w);
 		}
 		
+		/*
+		 * time the creation of each data structure
+		 */
+		
+		//TreeSet
+		long startTreeTime = System.nanoTime();
+		TreeSet<String> timeTree = new TreeSet<>(listOfWords);
+		long endTreeTime = System.nanoTime();
+		long TTime = endTreeTime - startTreeTime;
+		System.out.println("TreeSetTime: "+TTime+" ns");
+		
+		//HashSet
+		long startHashTime = System.nanoTime();
+		HashSet<String> timeHash = new HashSet<>(listOfWords);
+		long endHashTime = System.nanoTime();
+		long HTime = endHashTime-startHashTime;
+		System.out.println("HashSetTime: "+HTime+" ns");
+		
+		//SortedString
+		long startStringTime = System.nanoTime();
+		HashSet<String> timeString = new HashSet<>(listOfWords);
+		long endStringTime = System.nanoTime();
+		long STime = endStringTime-startStringTime;
+		System.out.println("SortedStringListTime: "+STime+" ns");
+		
+		//CharTrie
+		long startCharTime = System.nanoTime();
+		HashSet<String> timeChar = new HashSet<>(listOfWords);
+		long endCharTime = System.nanoTime();
+		long CTime = endCharTime-startCharTime;
+		System.out.println("CharTrieTime: "+CTime+" ns");
+		
+		//LLHash
+		long startLLHashTime = System.nanoTime();
+		HashSet<String> timeLLHash = new HashSet<>(listOfWords);
+		long endLLHashTime = System.nanoTime();
+		long LLHTime = endLLHashTime-startLLHashTime;
+		System.out.println("LLHashSetTime: "+LLHTime+" ns");
+		
+		
 		// --- Make sure that every word in the dictionary is in the dictionary:
 		timeLookup(listOfWords, treeOfWords);
 		timeLookup(listOfWords, hashOfWords);
@@ -76,15 +163,39 @@ public class CheckSpelling {
 		timeLookup(listOfWords, trie);
 		timeLookup(listOfWords, hm100k);
 		
+		/*
+		 * spellcheck Wuthering Heights
+		 */
+		
+		//Read the book, covert it to a list of words to spellcheck
+		List<String> wutheringHieghts = readText();
+		
+		String wHActual = new String();
+		for (int i = 0; i < wutheringHieghts.size(); i++) {
+			wHActual += wutheringHieghts.get(i);
+		}
+		
+		WordSplitter book = new WordSplitter();
+		List<String> text = WordSplitter.splitTextToWords(wHActual);
+		
+		System.out.println("book check:");
+		timeLookup(text, treeOfWords);
+		timeLookup(text, hashOfWords);
+		timeLookup(text, bsl);
+		timeLookup(text, trie);
+		timeLookup(text, hm100k);
+		
 		// --- Create a dataset of mixed hits and misses:
-		List<String> hitsAndMisses = new ArrayList<>();
-		// TODO, do this.
+		
+		
+		//give the list from the fakeDictionary method
+		List<String> hitsAndMisses = fakeDictionary(listOfWords, 100, 1);
 		timeLookup(hitsAndMisses, treeOfWords);
 		timeLookup(hitsAndMisses, hashOfWords);
 		timeLookup(hitsAndMisses, bsl);
 		timeLookup(hitsAndMisses, trie);
 		timeLookup(hitsAndMisses, hm100k);
-
+		
 		
 		// --- linear list timing:
 		// Looking up in a list is so slow, we need to sample:

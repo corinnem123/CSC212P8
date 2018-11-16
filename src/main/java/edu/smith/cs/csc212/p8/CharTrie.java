@@ -69,7 +69,7 @@ public class CharTrie extends AbstractSet<String> {
 				return this.links.length - 1;
 			}
 			if (lower > 'z' || lower < 'a') {
-				throw new RuntimeException("Bad character: "+lower);
+				return -1;
 			}
 			return lower - 'a';	
 		}
@@ -82,7 +82,11 @@ public class CharTrie extends AbstractSet<String> {
 			if (chars.isEmpty()) {
 				this.terminal = true;
 			} else {
-				int link = getLinkIndex(chars.pollFirst());
+				char c = chars.pollFirst();
+				int link = getLinkIndex(c);
+				if (link == -1) {
+					throw new RuntimeException("Bad Character: "+ c);
+				}
 				if (links[link] == null) {
 					links[link] = new Node();
 				}
@@ -100,6 +104,9 @@ public class CharTrie extends AbstractSet<String> {
 				return this.terminal;
 			} else {
 				int link = getLinkIndex(chars.pollFirst());
+				if (link == -1) {
+					return false;
+				}
 				if (links[link] == null) {
 					return false;
 				}
